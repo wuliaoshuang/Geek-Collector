@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CardData, Rarity } from '../types';
-import { Sparkles, Activity, Cpu, Zap, Triangle } from 'lucide-react';
+import { Sparkles, Activity, Cpu, Zap, Triangle, QrCode, Scan } from 'lucide-react';
+import QRCode from 'react-qr-code';
 
 interface CardDisplayProps {
   card: CardData;
@@ -32,6 +33,24 @@ const rarityChinese = {
 };
 
 export const CardDisplay: React.FC<CardDisplayProps> = ({ card, isDetailed = false }) => {
+  const [showQR, setShowQR] = useState(false);
+
+  // Compact data for QR code
+  const rawData = JSON.stringify({
+    id: card.id,
+    nm: card.name,
+    tp: card.type,
+    rr: card.rarity,
+    st: card.stats,
+    ts: card.timestamp
+  });
+
+  // Base64 encode with UTF-8 support to prevent garbled Chinese characters (Mojibake)
+  // This fits the "encrypted" theme and ensures data integrity
+  const qrData = typeof window !== 'undefined' 
+    ? window.btoa(unescape(encodeURIComponent(rawData)))
+    : '';
+
   return (
     <div className={`
       relative flex flex-col font-mono select-none
@@ -56,21 +75,53 @@ export const CardDisplay: React.FC<CardDisplayProps> = ({ card, isDetailed = fal
         <div className="absolute bottom-1 left-1 w-2 h-2 border-b-2 border-l-2 border-black opacity-50"></div>
         <div className="absolute bottom-1 right-1 w-2 h-2 border-b-2 border-r-2 border-black opacity-50"></div>
 
-        {card.imageUrl ? (
-          <img 
-            src={card.imageUrl} 
-            alt={card.name} 
-            className={`w-full h-full object-contain rendering-pixelated filter contrast-125 grayscale ${card.rarity === Rarity.LEGENDARY ? 'sepia-[.3]' : ''}`}
-            style={{ imageRendering: 'pixelated' }}
-          />
+        {showQR && isDetailed ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-white animate-[fade-in_0.2s_ease-out]">
+                <div className="p-2 border-2 border-black bg-white">
+                    <QRCode 
+                        value={qrData}
+                        size={160}
+                        viewBox={`0 0 256 256`}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    />
+                </div>
+                <div className="mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest text-center">
+                    ENCRYPTED DATA BLOCK<br/>(BASE64)
+                </div>
+            </div>
         ) : (
-          <div className="animate-pulse w-12 h-12 bg-gray-200" />
+            card.imageUrl ? (
+            <img 
+                src={card.imageUrl} 
+                alt={card.name} 
+                className={`w-full h-full object-contain rendering-pixelated filter contrast-125 grayscale ${card.rarity === Rarity.LEGENDARY ? 'sepia-[.3]' : ''}`}
+                style={{ imageRendering: 'pixelated' }}
+            />
+            ) : (
+            <div className="animate-pulse w-12 h-12 bg-gray-200" />
+            )
         )}
         
-        {/* Rarity Badge Overlay */}
-        <div className={`absolute bottom-2 right-2 px-2 py-0.5 border border-black bg-white text-[10px] font-bold uppercase ${rarityTextColors[card.rarity]}`}>
-          {rarityChinese[card.rarity]}
-        </div>
+        {/* Toggle QR Button (Only in Detailed View) */}
+        {isDetailed && (
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setShowQR(!showQR);
+                }}
+                className="absolute top-2 right-2 p-1.5 bg-black text-white hover:bg-gray-800 transition-colors shadow-retro-sm z-20"
+                title="切换加密数据"
+            >
+                {showQR ? <Scan className="w-4 h-4" /> : <QrCode className="w-4 h-4" />}
+            </button>
+        )}
+
+        {/* Rarity Badge Overlay (Hide when QR is shown) */}
+        {!showQR && (
+            <div className={`absolute bottom-2 right-2 px-2 py-0.5 border border-black bg-white text-[10px] font-bold uppercase ${rarityTextColors[card.rarity]}`}>
+            {rarityChinese[card.rarity]}
+            </div>
+        )}
       </div>
 
       {/* Stats & Info */}
