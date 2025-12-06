@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ViewState } from './types';
 import { GachaMachine } from './components/GachaMachine';
 import { CardWall } from './components/CardWall';
-import { Package, Grid, Coins, X } from 'lucide-react';
+import { HistoryLog } from './components/HistoryLog';
+import { MissionTerminal } from './components/MissionTerminal';
+import { Package, Grid, Coins, X, ClipboardList, TerminalSquare } from 'lucide-react';
 import { useStore, DAILY_BONUS } from './store';
 
 const App: React.FC = () => {
@@ -52,16 +54,29 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 pt-20 pb-24 max-w-5xl mx-auto w-full px-4 sm:px-6">
-        {view === 'GENERATOR' && (
+        <div className={view === 'GENERATOR' ? 'block' : 'hidden'}>
            <div className="animate-[fade-in_0.3s_ease-out]">
              <GachaMachine onSwitchToCollection={() => setView('COLLECTION')} />
            </div>
-        )}
-        {view === 'COLLECTION' && (
+        </div>
+        
+        <div className={view === 'COLLECTION' ? 'block' : 'hidden'}>
            <div className="animate-[fade-in_0.3s_ease-out]">
              <CardWall />
            </div>
-        )}
+        </div>
+
+        <div className={view === 'MISSION' ? 'block' : 'hidden'}>
+           <div className="animate-[fade-in_0.3s_ease-out]">
+             <MissionTerminal />
+           </div>
+        </div>
+
+        <div className={view === 'HISTORY' ? 'block' : 'hidden'}>
+           <div className="animate-[fade-in_0.3s_ease-out]">
+             <HistoryLog />
+           </div>
+        </div>
       </main>
 
       {/* Daily Bonus Modal */}
@@ -102,13 +117,29 @@ const App: React.FC = () => {
               <Package className="w-5 h-5" />
               <span className="text-[10px] font-bold uppercase">生成</span>
            </button>
-           <div className="w-[2px] bg-black"></div>
+           <div className="w-[1px] bg-gray-200"></div>
            <button 
              onClick={() => setView('COLLECTION')}
              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${view === 'COLLECTION' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
            >
               <Grid className="w-5 h-5" />
-              <span className="text-[10px] font-bold uppercase">档案库</span>
+              <span className="text-[10px] font-bold uppercase">档案</span>
+           </button>
+           <div className="w-[1px] bg-gray-200"></div>
+           <button 
+             onClick={() => setView('MISSION')}
+             className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${view === 'MISSION' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+           >
+              <TerminalSquare className="w-5 h-5" />
+              <span className="text-[10px] font-bold uppercase">任务</span>
+           </button>
+           <div className="w-[1px] bg-gray-200"></div>
+           <button 
+             onClick={() => setView('HISTORY')}
+             className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${view === 'HISTORY' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+           >
+              <ClipboardList className="w-5 h-5" />
+              <span className="text-[10px] font-bold uppercase">日志</span>
            </button>
         </div>
       </nav>

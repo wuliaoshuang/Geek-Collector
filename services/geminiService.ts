@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { GeneratedCardResponse, Rarity } from "../types";
+import { GeneratedCardResponse, Rarity, MissionDifficulty, ActiveMissionData, MissionVerificationResult } from "../types";
 
 const apiKey = process.env.API_KEY;
 
@@ -93,4 +93,111 @@ export const generateCardImage = async (visualPrompt: string): Promise<string> =
   }
 
   throw new Error("No image generated");
+};
+
+/**
+ * Mission System: Generate a Challenge
+ */
+export const generateMission = async (difficulty: MissionDifficulty, type: 'PYTHON' | 'LOGIC' | 'CRYPTO'): Promise<ActiveMissionData> => {
+    const model = "gemini-2.5-flash";
+    
+    const systemInstruction = `
+      You are the 'Mainframe Security Protocol' (主机安全协议).
+      Your task is to generate a challenge for a user who is trying to hack the system to earn credits.
+      
+      Difficulty Levels:
+      - EASY: Basic syntax, simple riddles, base64 decoding.
+      - MEDIUM: Loops, string manipulation, lateral thinking logic, hex math.
+      - HARD: Recursion, complex algorithms, multi-step logic, bitwise operations.
+
+      If type is 'PYTHON': Generate a coding question. Ask the user to write a specific function.
+      If type is 'LOGIC': Generate a short but tricky riddle or sequence puzzle.
+      If type is 'CRYPTO': Generate a decryption task or a hash identification task.
+
+      Output Requirements:
+      - **description**: The question text shown to the user. **MUST BE IN SIMPLIFIED CHINESE**. Keep it concise, technical, and terminal-style.
+      - context: The hidden solution or test case logic that you will use later to verify the user's answer (can be English or Code).
+    `;
+  
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: `Generate a ${difficulty} difficulty ${type} challenge.`,
+      config: {
+        systemInstruction: systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            description: { type: Type.STRING },
+            context: { type: Type.STRING },
+          },
+          required: ["description", "context"]
+        }
+      }
+    });
+  
+    const text = response.text;
+    if (!text) throw new Error("Failed to generate mission");
+    
+    return JSON.parse(text) as ActiveMissionData;
+};
+
+/**
+ * Mission System: Verify the Answer
+ */
+export const verifyMissionAnswer = async (
+    originalQuestion: string, 
+    context: string, 
+    userAnswer: string
+): Promise<MissionVerificationResult> => {
+    const model = "gemini-2.5-flash";
+
+    const systemInstruction = `
+      You are a strict code compiler and logic verifier. 
+      The user is trying to solve a puzzle.
+      
+      Input Context:
+      1. Question: The challenge given.
+      2. Hidden Context/Solution: The expected answer or logic provided by the system.
+      3. User Answer: The code or text the user submitted.
+
+      Task:
+      Determine if the User Answer solves the Question based on the Context.
+      - For Python code: It should be syntactically correct and solve the problem. Be flexible with variable names unless specified.
+      - For Logic/Crypto: The answer must be precise.
+
+      Output JSON:
+      - success: boolean
+      - message: A short system message in **SIMPLIFIED CHINESE**. 
+        If success: e.g., "执行完毕", "访问许可", "哈希匹配成功". 
+        If fail: e.g., "语法错误", "返回值无效", "拒绝访问", "逻辑不符".
+    `;
+
+    const prompt = `
+      Question: ${originalQuestion}
+      Hidden Context: ${context}
+      User Answer: ${userAnswer}
+    `;
+
+    const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    success: { type: Type.BOOLEAN },
+                    message: { type: Type.STRING },
+                },
+                required: ["success", "message"]
+            }
+        }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Failed to verify mission");
+
+    return JSON.parse(text) as MissionVerificationResult;
 };

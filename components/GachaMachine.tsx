@@ -20,6 +20,7 @@ export const GachaMachine: React.FC<GachaMachineProps> = ({ onSwitchToCollection
   const bytes = useStore(state => state.bytes);
   const deductBytes = useStore(state => state.deductBytes);
   const addCard = useStore(state => state.addCard);
+  const logDiscard = useStore(state => state.logDiscard);
 
   const handlePull = async () => {
     if (bytes < COST_PER_PULL) {
@@ -72,7 +73,10 @@ export const GachaMachine: React.FC<GachaMachineProps> = ({ onSwitchToCollection
   };
 
   const handleDiscard = () => {
-    setGeneratedCard(null);
+    if (generatedCard) {
+        logDiscard(generatedCard);
+        setGeneratedCard(null);
+    }
   };
 
   return (
